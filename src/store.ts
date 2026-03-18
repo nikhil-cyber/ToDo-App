@@ -12,6 +12,7 @@ export interface Task {
   minutes: number
   link: string
   customer: string
+  done: boolean
   createdAt: number
 }
 
@@ -33,6 +34,7 @@ export interface BucketItem {
   category: BucketCategory
   notes: string
   done: boolean
+  targetDate?: string  // YYYY-MM-DD, optional daily target
   createdAt: number
 }
 
@@ -42,19 +44,23 @@ interface AppState {
   bucket: BucketItem[]
 
   // Tasks
-  addTask: (task: Omit<Task, 'id' | 'createdAt'>) => void
+  addTask: (task: Omit<Task, 'id' | 'createdAt' | 'done'>) => void
   updateTask: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void
   deleteTask: (id: string) => void
+  toggleTask: (id: string) => void
+  moveTaskToDate: (id: string, newDate: string) => void
 
   // Reminders
   addReminder: (r: Omit<Reminder, 'id' | 'createdAt'>) => void
   toggleReminder: (id: string) => void
   deleteReminder: (id: string) => void
+  updateReminderDue: (id: string, due: string) => void
 
   // Bucket
   addBucketItem: (b: Omit<BucketItem, 'id' | 'createdAt'>) => void
   toggleBucket: (id: string) => void
   deleteBucket: (id: string) => void
+  updateBucketTargetDate: (id: string, targetDate: string) => void
 }
 
 function uid() {
@@ -70,7 +76,7 @@ export const useAppStore = create<AppState>()(
 
       addTask: (task) =>
         set((s) => ({
-          tasks: [...s.tasks, { ...task, id: uid(), createdAt: Date.now() }],
+          tasks: [...s.tasks, { ...task, done: false, id: uid(), createdAt: Date.now() }],
         })),
       updateTask: (id, updates) =>
         set((s) => ({
@@ -78,6 +84,14 @@ export const useAppStore = create<AppState>()(
         })),
       deleteTask: (id) =>
         set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
+      toggleTask: (id) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+        })),
+      moveTaskToDate: (id, newDate) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) => (t.id === id ? { ...t, date: newDate, done: false } : t)),
+        })),
 
       addReminder: (r) =>
         set((s) => ({
@@ -91,6 +105,10 @@ export const useAppStore = create<AppState>()(
         })),
       deleteReminder: (id) =>
         set((s) => ({ reminders: s.reminders.filter((r) => r.id !== id) })),
+      updateReminderDue: (id, due) =>
+        set((s) => ({
+          reminders: s.reminders.map((r) => (r.id === id ? { ...r, due, done: false } : r)),
+        })),
 
       addBucketItem: (b) =>
         set((s) => ({
@@ -104,6 +122,10 @@ export const useAppStore = create<AppState>()(
         })),
       deleteBucket: (id) =>
         set((s) => ({ bucket: s.bucket.filter((b) => b.id !== id) })),
+      updateBucketTargetDate: (id, targetDate) =>
+        set((s) => ({
+          bucket: s.bucket.map((b) => (b.id === id ? { ...b, targetDate } : b)),
+        })),
     }),
     { name: 'daily-planner-v1' },
   ),

@@ -511,6 +511,19 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 .bucket-card:hover .delete-btn,
 tr:hover .delete-btn { opacity: 1; }
 
+.move-btn {
+  opacity: 0;
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 7px;
+  border: none; background: transparent;
+  color: var(--c-text4); cursor: pointer;
+  transition: all 0.15s; flex-shrink: 0;
+}
+.move-btn:hover { background: rgba(var(--c-amber-rgb), 0.12); color: var(--c-amber); }
+.reminder-item:hover .move-btn,
+.bucket-card:hover .move-btn,
+tr:hover .move-btn { opacity: 1; }
+
 /* ════════════════════════════════════════════
    TAB NAV
    ════════════════════════════════════════════ */

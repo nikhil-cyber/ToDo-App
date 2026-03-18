@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, Target, CheckCircle2, Trash2, RotateCcw, StickyNote } from 'lucide-react'
+import { Plus, Target, CheckCircle2, Trash2, RotateCcw, StickyNote, Calendar } from 'lucide-react'
 import { useAppStore, type BucketCategory } from '../store'
+import { fmtDateShort } from '../lib/utils'
+import { MoveDatePicker } from './ui/DatePicker'
 
 type Filter = 'all' | BucketCategory | 'done'
 
@@ -23,7 +25,7 @@ export function BucketList() {
   const [filter, setFilter] = useState<Filter>('all')
   const [error, setError] = useState('')
 
-  const { bucket, addBucketItem, toggleBucket, deleteBucket } = useAppStore()
+  const { bucket, addBucketItem, toggleBucket, deleteBucket, updateBucketTargetDate } = useAppStore()
 
   const total = bucket.length
   const done = bucket.filter((b) => b.done).length
@@ -177,13 +179,27 @@ export function BucketList() {
                   </p>
                 )}
 
+                {item.targetDate && !item.done && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--c-text4)' }}>
+                    <Calendar size={11} />
+                    <span>Target: {fmtDateShort(item.targetDate)}</span>
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid var(--c-border)', paddingTop: 12, marginTop: 4 }}>
                   <button className="btn btn-ghost btn-sm" onClick={() => toggleBucket(item.id)}>
                     {item.done ? <><RotateCcw size={11} />Undo</> : <><CheckCircle2 size={11} />Mark Done</>}
                   </button>
-                  <button className="delete-btn" style={{ opacity: 1 }} onClick={() => deleteBucket(item.id)}>
-                    <Trash2 size={13} />
-                  </button>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {!item.done && (
+                      <MoveDatePicker
+                        currentDate={item.targetDate}
+                        onMove={(date) => updateBucketTargetDate(item.id, date)}
+                      />
+                    )}
+                    <button className="delete-btn" style={{ opacity: 1 }} onClick={() => deleteBucket(item.id)}>
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}

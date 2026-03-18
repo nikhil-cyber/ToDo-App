@@ -7,6 +7,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, type Priority } from '../store'
 import { todayStr, fmtDateShort, isOverdue } from '../lib/utils'
+import { MoveDatePicker } from './ui/DatePicker'
 
 type Filter = 'all' | 'active' | 'done' | 'high' | 'overdue'
 
@@ -25,7 +26,7 @@ export function Reminders() {
   const [filter, setFilter] = useState<Filter>('active')
   const [error, setError] = useState('')
 
-  const { reminders, addReminder, toggleReminder, deleteReminder } = useAppStore()
+  const { reminders, addReminder, toggleReminder, deleteReminder, updateReminderDue } = useAppStore()
 
   const total = reminders.length
   const done = reminders.filter((r) => r.done).length
@@ -206,7 +207,15 @@ export function Reminders() {
                     </div>
                   </div>
 
-                  <button className="delete-btn" onClick={() => deleteReminder(r.id)}><Trash2 size={13} /></button>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {!r.done && (
+                      <MoveDatePicker
+                        currentDate={r.due || todayStr()}
+                        onMove={(date) => updateReminderDue(r.id, date)}
+                      />
+                    )}
+                    <button className="delete-btn" onClick={() => deleteReminder(r.id)}><Trash2 size={13} /></button>
+                  </div>
                 </motion.div>
               )
             })}

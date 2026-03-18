@@ -5,7 +5,7 @@ import {
   Clock, Link2, Trash2, Timer, ExternalLink,
   Building2, Pencil, Check, X, CalendarDays, LayoutList,
 } from 'lucide-react'
-import { DatePicker } from './ui/DatePicker'
+import { DatePicker, MoveDatePicker } from './ui/DatePicker'
 import { useAppStore } from '../store'
 import {
   todayStr, fmtDateLabel, fmtTime,
@@ -43,11 +43,15 @@ function TaskRow({
   index,
   onDelete,
   onSave,
+  onToggleDone,
+  onMoveTo,
 }: {
   task: Task
   index: number
   onDelete: () => void
   onSave: (updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void
+  onToggleDone: () => void
+  onMoveTo: (date: string) => void
 }) {
   const [editing, setEditing] = useState(false)
   const [edit, setEdit] = useState<EditState>({
@@ -138,9 +142,24 @@ function TaskRow({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
       className="task-row"
+      style={task.done ? { opacity: 0.55 } : undefined}
     >
       <td style={{ color: 'var(--c-text4)', fontFamily: 'monospace', fontSize: 11 }}>{index + 1}</td>
-      <td style={{ fontWeight: 500 }}>{task.name}</td>
+      <td style={{ fontWeight: 500 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            className={`check-circle${task.done ? ' checked' : ''}`}
+            onClick={onToggleDone}
+            style={{ marginTop: 0, flexShrink: 0 }}
+            title={task.done ? 'Mark incomplete' : 'Mark complete'}
+          >
+            {task.done && <Check size={10} color="#021c12" />}
+          </button>
+          <span style={{ textDecoration: task.done ? 'line-through' : 'none', color: task.done ? 'var(--c-text4)' : undefined }}>
+            {task.name}
+          </span>
+        </div>
+      </td>
       <td>{task.customer ? <CustomerChip name={task.customer} /> : <span style={{ color: 'var(--c-text5)' }}>—</span>}</td>
       <td>
         <span className="time-chip"><Clock size={11} />{fmtTime(task.hours, task.minutes)}</span>
@@ -154,9 +173,10 @@ function TaskRow({
       </td>
       <td>
         <div style={{ display: 'flex', gap: 4 }}>
-          <button className="delete-btn" style={{ opacity: undefined }} onClick={startEdit} title="Edit">
+          <button className="delete-btn" onClick={startEdit} title="Edit">
             <Pencil size={12} />
           </button>
+          <MoveDatePicker currentDate={task.date} onMove={onMoveTo} />
           <button className="delete-btn" onClick={onDelete} title="Delete">
             <Trash2 size={12} />
           </button>
@@ -166,10 +186,12 @@ function TaskRow({
   )
 }
 
-function DayTable({ tasks, onDelete, onSave }: {
+function DayTable({ tasks, onDelete, onSave, onToggleDone, onMoveTo }: {
   tasks: Task[]
   onDelete: (id: string) => void
   onSave: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void
+  onToggleDone: (id: string) => void
+  onMoveTo: (id: string, date: string) => void
 }) {
   const total = totalMinutes(tasks)
 
@@ -205,6 +227,8 @@ function DayTable({ tasks, onDelete, onSave }: {
                 index={i}
                 onDelete={() => onDelete(task.id)}
                 onSave={(updates) => onSave(task.id, updates)}
+                onToggleDone={() => onToggleDone(task.id)}
+                onMoveTo={(date) => onMoveTo(task.id, date)}
               />
             ))}
           </AnimatePresence>
@@ -224,12 +248,14 @@ function DayTable({ tasks, onDelete, onSave }: {
   )
 }
 
-function WeekView({ anchorDate, tasks, onNavigateDay, onDelete, onSave }: {
+function WeekView({ anchorDate, tasks, onNavigateDay, onDelete, onSave, onToggleDone, onMoveTo }: {
   anchorDate: string
   tasks: Task[]
   onNavigateDay: (d: string) => void
   onDelete: (id: string) => void
   onSave: (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt'>>) => void
+  onToggleDone: (id: string) => void
+  onMoveTo: (id: string, date: string) => void
 }) {
   const days = getWeekDays(anchorDate)
   const today = todayStr()
@@ -319,6 +345,8 @@ function WeekView({ anchorDate, tasks, onNavigateDay, onDelete, onSave }: {
                               index={i}
                               onDelete={() => onDelete(task.id)}
                               onSave={(updates) => onSave(task.id, updates)}
+                              onToggleDone={() => onToggleDone(task.id)}
+                              onMoveTo={(date) => onMoveTo(task.id, date)}
                             />
                           ))}
                         </AnimatePresence>
@@ -345,7 +373,7 @@ export function DailyLog() {
   const [customer, setCustomer] = useState('')
   const [error, setError] = useState('')
 
-  const { tasks, addTask, updateTask, deleteTask } = useAppStore()
+  const { tasks, addTask, updateTask, deleteTask, toggleTask, moveTaskToDate } = useAppStore()
 
   const dayTasks = tasks
     .filter((t) => t.date === date)
@@ -560,6 +588,8 @@ export function DailyLog() {
                 tasks={dayTasks}
                 onDelete={deleteTask}
                 onSave={(id, updates) => updateTask(id, updates)}
+                onToggleDone={toggleTask}
+                onMoveTo={(id, date) => moveTaskToDate(id, date)}
               />
             </div>
           </motion.div>
@@ -585,6 +615,8 @@ export function DailyLog() {
               onNavigateDay={handleNavigateDay}
               onDelete={deleteTask}
               onSave={(id, updates) => updateTask(id, updates)}
+              onToggleDone={toggleTask}
+              onMoveTo={(id, date) => moveTaskToDate(id, date)}
             />
           </motion.div>
         )}
